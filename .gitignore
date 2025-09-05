@@ -1,0 +1,7 @@
+bin/
+obj/
+.idea/
+.idea.FlowTask/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
