@@ -3,7 +3,9 @@ using FlowTask.Application.DTO;
 using FlowTask.Application.DTO.Task;
 using FlowTask.Application.Interfaces.Repository;
 using FlowTask.Application.Interfaces.Service;
+using Microsoft.Extensions.Logging;
 using FlowTask.Domain.Entities;
+using FlowTask.Domain.Exceptions;
 using SequentialGuid;
 using Mapster;
 
@@ -12,25 +14,30 @@ namespace FlowTask.Application.Services;
 public class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
+    private readonly ILogger<TaskService> _logger;
 
-    public TaskService(ITaskRepository taskRepository)
+    public TaskService(ITaskRepository taskRepository, ILogger<TaskService> logger)
     {
         _taskRepository = taskRepository;
+        _logger = logger;
     }
 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskDto dto, ClaimsPrincipal user)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = Guid.Parse(userIdClaim);
         
         var task = dto.Adapt<TaskItem>();
         task.Priority = dto.Priority;
         task.Status = dto.Status;
         task.Id = SequentialGuidGenerator.Instance.NewGuid(); 
         task.CreatedAt = DateTime.UtcNow; 
-        task.UserId = Guid.Parse(userIdClaim);
+        task.UserId = userId;
         
         if (task.DueDate.HasValue)
             task.DueDate = DateTime.SpecifyKind(task.DueDate.Value, DateTimeKind.Utc);
+        
+        _logger.LogInformation("Task {TaskId} created by User {UserId}", task.Id, userId);
 
         await _taskRepository.CreateTaskAsync(task);
         return task.Adapt<TaskDto>();
@@ -40,9 +47,12 @@ public class TaskService : ITaskService
     {
         var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var task = await _taskRepository.GetByIdAsync(id);
-        
+
         if (task == null || task.UserId != userId)
-            return null;
+        {
+            _logger.LogWarning("User {UserId} attempted to access Task {TaskId} without permission", userId, id);
+            throw new TaskAccessException();
+        }
         
         return task.Adapt<TaskDto>();
     }
@@ -52,7 +62,10 @@ public class TaskService : ITaskService
         var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var task = await _taskRepository.GetByIdAsync(id);
         if (task == null || task.UserId != userId)
-            return false; 
+        {
+            _logger.LogWarning("User {UserId} attempted to update Task {TaskId} without permission", userId, id);
+            throw new TaskAccessException();
+        }
         
         task.Title = dto.Title;
         task.Description = dto.Description;
@@ -69,7 +82,9 @@ public class TaskService : ITaskService
         var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var task = await _taskRepository.GetByIdAsync(id);
         if (task == null || task.UserId != userId)
-            return false;
+            throw new TaskAccessException();
+        
+        _logger.LogInformation("Task {TaskId} deleted by User {UserId}", id, userId);
         
         await _taskRepository.DeleteTaskAsync(task);
         return true;
@@ -87,8 +102,10 @@ public class TaskService : ITaskService
         var totalCount = await _taskRepository.CountAsync(userId, filter);
         
         var item = tasks.Adapt<List<TaskDto>>();
+        
+        _logger.LogInformation("User {UserId} fetched {Count} tasks (page {Page})", userId, item.Count, pageNumber);
 
-        return new PagedResponse<TaskDto>()
+        return new PagedResponse<TaskDto>
         {
             Items = item,
             CurrentPage = pageNumber,

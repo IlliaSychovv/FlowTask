@@ -5,6 +5,8 @@ using FlowTask.Application.Services;
 using FlowTask.Infrastructure.Repositories;
 using FlowTask.Infrastructure.Services;
 using FlowTask.Infrastructure.Wrapper;
+using FlowTask.Middleware;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace FlowTask.Extensions;
 
@@ -17,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserManagerWrapper, UserManagerWrapper>();
         services.AddScoped<ITaskService, TaskService>();
         services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddSingleton<IExceptionHandler, GlobalExceptionHandler>();
         
         return services;
     }

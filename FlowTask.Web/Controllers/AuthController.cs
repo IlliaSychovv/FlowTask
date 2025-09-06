@@ -19,9 +19,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> RegisterAsync([FromBody] RegisterDto dto)
     {
         var user = await _authService.RegisterUserAsync(dto);
-
         if (!user.Succeeded)
-            return BadRequest();
+            return BadRequest(user.Errors);
         
         return Created(string.Empty, new { Email = dto.Email });
     }
@@ -30,7 +29,6 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> LoginAsync([FromBody] LoginDto dto)
     {
         var token = await _authService.LoginUserAsync(dto.Name, dto.Password);
-        
         if (token == null)
             return Unauthorized();
         
