@@ -6,8 +6,8 @@ public class TaskItem
     public string Title { get; set; } = string.Empty; 
     public string? Description { get; set; }
     public DateTime? DueDate { get; set; }  
-    public TaskStatus Status { get; set; }  
-    public TaskPriority Priority { get; set; }  
+    public FlowTaskStatus Status { get; set; }  
+    public FlowTaskPriority Priority { get; set; }  
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } 
     
@@ -15,14 +15,14 @@ public class TaskItem
     public ApplicationUser User { get; set; }
 }
 
-public enum TaskStatus
+public enum FlowTaskStatus
 {
     Pending,
     InProgress,
     Completed
 }
 
-public enum TaskPriority
+public enum FlowTaskPriority
 {
     Low, 
     Medium,
