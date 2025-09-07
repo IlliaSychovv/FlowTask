@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  flowtask-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowtask-api
+    restart: unless-stopped
+    ports:
+      - "5248:80"
+      - "7048:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=flowTask;Username=postgres;Password=i1112006s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - flowtask-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: flowtask-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: flowTask
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: i1112006s
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - flowtask-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flowTask"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: flowtask-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@flowtask.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - flowtask-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  flowtask-network:
+    driver: bridge
