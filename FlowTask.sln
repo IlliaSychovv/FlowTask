@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowTask.Application", "Flo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowTask.Infrastructure", "FlowTask.Infrastructure\FlowTask.Infrastructure.csproj", "{83894611-A381-43E2-B181-3C92237C8A51}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowTask.Tests", "FlowTask.Tests\FlowTask.Tests.csproj", "{E9FC4745-E32E-49CE-8B37-9F9C6759634A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{83894611-A381-43E2-B181-3C92237C8A51}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83894611-A381-43E2-B181-3C92237C8A51}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83894611-A381-43E2-B181-3C92237C8A51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9FC4745-E32E-49CE-8B37-9F9C6759634A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9FC4745-E32E-49CE-8B37-9F9C6759634A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9FC4745-E32E-49CE-8B37-9F9C6759634A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9FC4745-E32E-49CE-8B37-9F9C6759634A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

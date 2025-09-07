@@ -26,7 +26,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
             .HasConversion<string>();
 
         builder.Entity<TaskItem>()
-            .HasIndex(i => i.Id);
+            .HasIndex(i => i.UserId);
     }
     
     public DbSet<ApplicationUser> ApplicationUsers { get; set; }

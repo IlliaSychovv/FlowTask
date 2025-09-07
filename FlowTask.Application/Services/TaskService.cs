@@ -8,6 +8,7 @@ using FlowTask.Domain.Entities;
 using FlowTask.Domain.Exceptions;
 using SequentialGuid;
 using Mapster;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FlowTask.Application.Services;
 
@@ -15,11 +16,13 @@ public class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
     private readonly ILogger<TaskService> _logger;
+    private readonly IMemoryCache _cache;
 
-    public TaskService(ITaskRepository taskRepository, ILogger<TaskService> logger)
+    public TaskService(ITaskRepository taskRepository, ILogger<TaskService> logger, IMemoryCache cache)
     {
         _taskRepository = taskRepository;
         _logger = logger;
+        _cache = cache;
     }
 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskDto dto, ClaimsPrincipal user)
@@ -28,10 +31,7 @@ public class TaskService : ITaskService
         var userId = Guid.Parse(userIdClaim);
         
         var task = dto.Adapt<TaskItem>();
-        task.Priority = dto.Priority;
-        task.Status = dto.Status;
         task.Id = SequentialGuidGenerator.Instance.NewGuid(); 
-        task.CreatedAt = DateTime.UtcNow; 
         task.UserId = userId;
         
         if (task.DueDate.HasValue)
@@ -40,6 +40,7 @@ public class TaskService : ITaskService
         _logger.LogInformation("Task {TaskId} created by User {UserId}", task.Id, userId);
 
         await _taskRepository.CreateTaskAsync(task);
+        InvalidateUserTasksCache(userId);
         return task.Adapt<TaskDto>();
     }
 
@@ -74,6 +75,7 @@ public class TaskService : ITaskService
         task.UpdatedAt = DateTime.UtcNow;
         
         await _taskRepository.UpdateTaskAsync(task);
+        InvalidateUserTasksCache(userId);
         return true;
     }
 
@@ -87,6 +89,7 @@ public class TaskService : ITaskService
         _logger.LogInformation("Task {TaskId} deleted by User {UserId}", id, userId);
         
         await _taskRepository.DeleteTaskAsync(task);
+        InvalidateUserTasksCache(userId);
         return true;
     }
 
@@ -94,23 +97,60 @@ public class TaskService : ITaskService
         int pageNumber = 1, int pageSize = 10)
     {
         var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        string cashKey = $"user_{userId}_tasks";
+       
+        if (!_cache.TryGetValue(cashKey, out List<TaskDto>? cachedTasks))
+        {
+            var tasks = await _taskRepository.GetTasksAsync(userId);
+            cachedTasks = tasks.Adapt<List<TaskDto>>();
+
+            _cache.Set(cashKey, cachedTasks, TimeSpan.FromMinutes(60));
+        }
         
-        int skip = (pageNumber - 1) * pageSize;
-        int take = pageSize;
+        IEnumerable<TaskDto> filtered = cachedTasks;
+
+        if (filter != null)
+        {
+            if (filter.Status.HasValue)
+                filtered = filtered.Where(t => t.Status == filter.Status.Value);
+            if (filter.Priority.HasValue)
+                filtered = filtered.Where(t => t.Priority == filter.Priority.Value);
+            if (filter.DueDate.HasValue)
+                filtered = filtered.Where(t => t.DueDate.HasValue &&
+                                               t.DueDate.Value.Date <= filter.DueDate.Value.Date);
+
+            if (!string.IsNullOrEmpty(filter.SortBy))
+            {
+                filtered = filter.SortBy.ToLower() switch
+                {
+                    "duedate" => filter.SortDescending ? filtered.OrderByDescending(t => t.DueDate)
+                        : filtered.OrderBy(t => t.DueDate),
+                    "priority" => filter.SortDescending ? filtered.OrderByDescending(t => t.Priority)
+                        : filtered.OrderBy(t => t.Priority),
+                    _ => filtered
+                };
+            }
+        }
         
-        var tasks = await _taskRepository.GetTasksAsync(userId, skip, take, filter);
-        var totalCount = await _taskRepository.CountAsync(userId, filter);
+        var paged = filtered
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
         
-        var item = tasks.Adapt<List<TaskDto>>();
-        
-        _logger.LogInformation("User {UserId} fetched {Count} tasks (page {Page})", userId, item.Count, pageNumber);
+        _logger.LogInformation("User {UserId} fetched {Count} tasks (page {Page})", userId, paged.Count, pageNumber);
 
         return new PagedResponse<TaskDto>
         {
-            Items = item,
+            Items = paged,
             CurrentPage = pageNumber,
-            TotalCount = totalCount,
+            TotalCount = filtered.Count(),
             PageSize = pageSize
         };
+    }
+    
+    private void InvalidateUserTasksCache(Guid userId)
+    {
+        string cacheKey = $"user_{userId}_tasks";
+        _cache.Remove(cacheKey);
     }
 }
