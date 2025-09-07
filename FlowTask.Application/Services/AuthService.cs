@@ -22,6 +22,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
     
+    // Registers a new user with the provided data and password
     public async Task<IdentityResult> RegisterUserAsync(RegisterDto dto)
     {
         var user = dto.Adapt<ApplicationUser>();
@@ -33,6 +34,7 @@ public class AuthService : IAuthService
         return result;
     }
     
+    // Logs in a user by verifying username and password
     public async Task<string?> LoginUserAsync(string username, string password)
     {
         var user = await _userManagerWrapper.FindByNameAsync(username);

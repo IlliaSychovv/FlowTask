@@ -25,6 +25,7 @@ public class TaskService : ITaskService
         _cache = cache;
     }
 
+    // Creates a new task for the user and saves it to the database 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskDto dto, ClaimsPrincipal user)
     {
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -43,7 +44,8 @@ public class TaskService : ITaskService
         InvalidateUserTasksCache(userId);
         return task.Adapt<TaskDto>();
     }
-
+    
+    // Retrieves a task by ID and checks user access
     public async Task<TaskDto> GetTaskByIdAsync(Guid id, ClaimsPrincipal user)
     {
         var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -58,6 +60,7 @@ public class TaskService : ITaskService
         return task.Adapt<TaskDto>();
     }
 
+    // Updates a task by ID and checks user access
     public async Task<bool> UpdateTaskAsync(Guid id, UpdateTaskDto dto, ClaimsPrincipal user)
     {
         var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -79,6 +82,7 @@ public class TaskService : ITaskService
         return true;
     }
 
+    // Deletes a task by ID and checks user access
     public async Task<bool> DeleteTaskAsync(Guid id, ClaimsPrincipal user)
     {
         var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -92,7 +96,9 @@ public class TaskService : ITaskService
         InvalidateUserTasksCache(userId);
         return true;
     }
-
+    
+    // Retrieves a paged list of tasks with optional filtering and sorting
+    // Uses cached tasks if available to reduce database queries
     public async Task<PagedResponse<TaskDto>> GetTasksAsync(ClaimsPrincipal user, TaskFilterDto? filter = null,
         int pageNumber = 1, int pageSize = 10)
     {
@@ -148,6 +154,7 @@ public class TaskService : ITaskService
         };
     }
     
+    // Clears cached tasks for a specific user
     private void InvalidateUserTasksCache(Guid userId)
     {
         string cacheKey = $"user_{userId}_tasks";

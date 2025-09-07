@@ -27,6 +27,15 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         builder.Entity<TaskItem>()
             .HasIndex(i => i.UserId);
+        
+        builder.Entity<TaskItem>()
+            .HasIndex(i => i.Status);
+        
+        builder.Entity<TaskItem>()
+            .HasIndex(i => i.Priority);
+        
+        builder.Entity<TaskItem>()
+            .HasIndex(i => i.DueDate);
     }
     
     public DbSet<ApplicationUser> ApplicationUsers { get; set; }
