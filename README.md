@@ -53,6 +53,9 @@ The project includes a comprehensive **GitHub Actions CI/CD pipeline** that auto
 - **Quality Gates** — Ensures code quality before deployment
 
 The pipeline ensures code reliability and enables seamless deployment to production environments.
+<img width="1895" height="884" alt="GitHub Actions1 1" src="https://github.com/user-attachments/assets/67483797-14f3-40ad-a918-1646d4c1f251" />
+<img width="1894" height="914" alt="GitHub Actions2 1" src="https://github.com/user-attachments/assets/2a124ce8-89c9-40e3-867c-cd18670b7bf5" />
+<img width="1903" height="777" alt="GitHub Actions3 1" src="https://github.com/user-attachments/assets/4cbf3803-e1da-44f6-b1c9-79035dde90fd" />
 
 ## Why Clean Architecture?
 
